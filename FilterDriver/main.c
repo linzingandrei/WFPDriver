@@ -485,10 +485,16 @@ DefaultClassifyFn(
 	WCHAR icmpTypeString[128] = { 0 };
 
     FWP_BYTE_BLOB* appBlob = app->value.byteBlob;
-	UNICODE_STRING appPathString;
-	appPathString.Buffer = (PWCH)appBlob->data;
-	appPathString.Length = (USHORT)appBlob->size;
-	appPathString.MaximumLength = (USHORT)appBlob->size;
+    UNICODE_STRING appPathString;
+
+    BOOLEAN ok = FALSE;
+    if (appBlob && (PWCH)appBlob->data)
+    {
+        appPathString.Buffer = (PWCH)appBlob->data;
+        appPathString.Length = (USHORT)appBlob->size;
+        appPathString.MaximumLength = (USHORT)appBlob->size;
+        ok = TRUE;
+    }
 
     switch(localAddress->value.type)
     {
@@ -542,12 +548,15 @@ DefaultClassifyFn(
                 icmp->value.uint8
             );
 
-            DbgPrintEx(
-                0,
-                0,
-                "AppId: %wZ\n",
-                &appPathString
-            );
+            if (ok)
+            {
+                DbgPrintEx(
+                    0,
+                    0,
+                    "AppId: %wZ\n",
+                    &appPathString
+                );
+            }
 
             //__debugbreak();
 			RtlZeroMemory(icmpTypeString, sizeof(icmpTypeString));
@@ -605,12 +614,15 @@ DefaultClassifyFn(
                 icmp->value.uint8
             );
 
-            DbgPrintEx(
-                0,
-                0,
-                "AppId: %wZ\n",
-                &appPathString
-            );
+            if (ok)
+            {
+                DbgPrintEx(
+                    0,
+                    0,
+                    "AppId: %wZ\n",
+                    &appPathString
+                );
+            }
         }
         break;
 
