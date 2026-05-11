@@ -9,7 +9,6 @@
 #include <guiddef.h>
 #include <fwpmk.h>
 
-#include <wdm.h>
 #include <ip2string.h>
 
 #define UINT_MAX 0xFFFFFFFF
@@ -121,32 +120,36 @@ DefaultClassifyFn(
         &protocolIndex,
         &icmpIndex);
 
+	FWPS_INCOMING_VALUE* appId = &inFixedValues->incomingValue[appId];
     FWPS_INCOMING_VALUE* localAddress = &inFixedValues->incomingValue[localAddressIndex];
     FWPS_INCOMING_VALUE* localPort = &inFixedValues->incomingValue[localPortIndex];
     FWPS_INCOMING_VALUE* remoteAddress = &inFixedValues->incomingValue[remoteAddressIndex];
     FWPS_INCOMING_VALUE* remotePort = &inFixedValues->incomingValue[remotePortIndex];
+	FWPS_INCOMING_VALUE* protocol = &inFixedValues->incomingValue[protocolIndex];
+	FWPS_INCOMING_VALUE* icmpIndex = &inFixedValues->incomingValue[icmpIndex];
 
-    /* Todo read docs and extract actual values :D be careful of ipv4/ipv6 */
+	UNREFERENCED_PARAMETER(appId);
     UNREFERENCED_PARAMETER(localAddress);
     UNREFERENCED_PARAMETER(localPort);
     UNREFERENCED_PARAMETER(remoteAddress);
     UNREFERENCED_PARAMETER(remotePort);
+    UNREFERENCED_PARAMETER(protocol);
+	UNREFERENCED_PARAMETER(icmpIndex);
 
-    /* To format an IPV4 address you can use something similar with the following snippet. Be carefult of IRQL and the ipv4/ipv6 :) This is for ipv4*/
-    // {
-    //     NT_ASSERT(localAddress->value.type == FWP_UINT32);
-    //     NT_ASSERT(localPort->value.type == FWP_UINT16);
-    // 
-    //     struct in_addr ipAddress = { 0 };
-    // 
-    //     WCHAR ipAddressBuffer[100] = { 0 };
-    //     ULONG ipAddressBufferSize = ARRAYSIZE(ipAddressBuffer);
-    // 
-    //     ipAddress.S_un.S_addr = RtlUlongByteSwap(localAddress->value.int32);
-    //     RtlIpv4AddressToStringExW(&ipAddress, localPort->value.int16, &ipAddressBuffer[0], &ipAddressBufferSize);
-    // 
-    //     __debugbreak();
-    // }
+    {
+        NT_ASSERT(localAddress->value.type == FWP_UINT32);
+        NT_ASSERT(localPort->value.type == FWP_UINT16);
+     
+        struct in_addr ipAddress = { 0 };
+     
+        WCHAR ipAddressBuffer[100] = { 0 };
+        ULONG ipAddressBufferSize = ARRAYSIZE(ipAddressBuffer);
+     
+        ipAddress.S_un.S_addr = RtlUlongByteSwap(localAddress->value.int32);
+        RtlIpv4AddressToStringExW(&ipAddress, localPort->value.int16, &ipAddressBuffer[0], &ipAddressBufferSize);
+     
+        __debugbreak();
+    }
 }
 
 NTSTATUS NTAPI
@@ -184,7 +187,6 @@ DefaultDeleteFn(
 static PDEVICE_OBJECT gNetworkDeviceObject = NULL;
 static HANDLE gFilterEngine = NULL;
 
-/* {927E39F6 - E5F3 - 4ED6 - B4E0 - E63D0A01F704} */
 #define gFwpProviderKey { 0x927e39f6, 0xe5f3, 0x4ed6, { 0xb4, 0xe0, 0xe6, 0x3d, 0xa, 0x1, 0xf7, 0x4 } }
 
 static FWPM_PROVIDER gFwpProvider =
@@ -207,10 +209,6 @@ static FWPM_SUBLAYER gFwpFilterSubLayer =
     .weight = 0x100
 };
 
-
-/// Similar data with this must be added to complete the homework :) 
-
-// This must be unique!
 #define gAleAuthConnectV4CalloutKeyGuid { 0x18b4d00e, 0x1540, 0x45f5, { 0xa1, 0xfb, 0x4f, 0x8d, 0xd7, 0xe9, 0x6e, 0x00 } }
 
 static FWPM_CALLOUT gAleAuthConnectV4ManagementCallout =
@@ -254,12 +252,140 @@ static FWPM_FILTER gAleAuthConnectV4Filter =
     .effectiveWeight = {0}
 };
 
+#define gAleAuthRecvAcceptV4CalloutKeyGuid { 0x9f16b155, 0xc170, 0x4e3e, { 0x96, 0xf1, 0xe2, 0x9c, 0x31, 0x97, 0x33, 0x62 } }
+
+static FWPM_CALLOUT gAleAuthRecvAcceptV4ManagementCallout =
+{
+    .calloutKey = gAleAuthRecvAcceptV4CalloutKeyGuid,
+    .displayData.name = L"Dsmk - Callout for FWPM_LAYER_ALE_AUTH_RECV_ACCEPT_V4",
+    .displayData.description = L"This filtering layer allows for authorizing receive and accept requests for incoming TCP connections.",
+    .flags = 0,
+    .providerKey = &gFwpProvider.providerKey,
+    .providerData = {0},
+    .applicableLayer = {0},
+    .calloutId = 0
+};
+static FWPS_CALLOUT gAleAuthRecvAcceptV4StateCallout =
+{
+    .calloutKey = gAleAuthRecvAcceptV4CalloutKeyGuid,
+    .flags = 0,
+    .classifyFn = DefaultClassifyFn,
+    .flowDeleteFn = DefaultDeleteFn,
+    .notifyFn = DefaultNotifyFn,
+};
+static UINT32 gAleAuthRecvAcceptV4StateCalloutID = 0;
+static FWPM_FILTER gAleAuthRecvAcceptV4Filter =
+{
+    .filterKey = {0},
+    .displayData.name = L"Dsmk - Filter for FWPM_LAYER_ALE_AUTH_RECV_ACCEPT_V4",
+    .displayData.description = L"This filtering layer allows for authorizing receive and accept requests for incoming TCP connections.",
+    .flags = FWPM_FILTER_FLAG_NONE,
+    .providerKey = &gFwpProvider.providerKey,
+    .providerData = {0},
+    .layerKey = {0},
+    .subLayerKey = {0},
+    .weight.type = FWP_EMPTY,
+    .weight.uint64 = 0,
+    .numFilterConditions = 0,
+    .filterCondition = NULL,
+    .action = {0},
+    .providerContextKey = {0},
+    .reserved = NULL,
+    .filterId = 0,
+    .effectiveWeight = {0}
+};
+
+#define gAleAuthConnectV6CalloutKeyGuid { 0x1d0e0358, 0x7c2, 0x480f, { 0xba, 0x9e, 0x62, 0x92, 0x9e, 0x64, 0x9, 0xbe } }
+
+static FWPM_CALLOUT gAleAuthConnectV6ManagementCallout =
+{
+    .calloutKey = gAleAuthConnectV6CalloutKeyGuid,
+    .displayData.name = L"Dsmk - Callout for FWPM_LAYER_ALE_AUTH_CONNECT_V6",
+    .displayData.description = L"This filtering layer allows for authorizing connect requests for outgoing TCP connections.",
+    .flags = 0,
+    .providerKey = &gFwpProvider.providerKey,
+    .providerData = {0},
+    .applicableLayer = {0},
+    .calloutId = 0
+};
+static FWPS_CALLOUT gAleAuthConnectV6StateCallout =
+{
+    .calloutKey = gAleAuthConnectV6CalloutKeyGuid,
+    .flags = 0,
+    .classifyFn = DefaultClassifyFn,
+    .flowDeleteFn = DefaultDeleteFn,
+    .notifyFn = DefaultNotifyFn,
+};
+static UINT32 gAleAuthConnectV6StateCalloutID = 0;
+static FWPM_FILTER gAleAuthConnectV6Filter =
+{
+    .filterKey = {0},
+    .displayData.name = L"Dsmk - Filter for FWPM_LAYER_ALE_AUTH_CONNECT_V6",
+    .displayData.description = L"This filtering layer allows for authorizing connect requests for outgoing TCP connections.",
+    .flags = FWPM_FILTER_FLAG_NONE,
+    .providerKey = &gFwpProvider.providerKey,
+    .providerData = {0},
+    .layerKey = {0},
+    .subLayerKey = {0},
+    .weight.type = FWP_EMPTY,
+    .weight.uint64 = 0,
+    .numFilterConditions = 0,
+    .filterCondition = NULL,
+    .action = {0},
+    .providerContextKey = {0},
+    .reserved = NULL,
+    .filterId = 0,
+    .effectiveWeight = {0}
+};
+
+#define gAleAuthRecvAcceptV6CalloutKeyGuid { 0x4b8c96e8, 0xef00, 0x4f9f, { 0x8f, 0x4a, 0xeb, 0x9, 0xcf, 0xc, 0x40, 0xe8 } }
+
+static FWPM_CALLOUT gAleAuthRecvAcceptV6ManagementCallout =
+{
+    .calloutKey = gAleAuthRecvAcceptV6CalloutKeyGuid,
+    .displayData.name = L"Dsmk - Callout for FWPM_LAYER_ALE_AUTH_RECV_ACCEPT_V6",
+    .displayData.description = L"This filtering layer allows for authorizing receive and accept requests for incoming TCP connections.",
+    .flags = 0,
+    .providerKey = &gFwpProvider.providerKey,
+    .providerData = {0},
+    .applicableLayer = {0},
+    .calloutId = 0
+};
+static FWPS_CALLOUT gAleAuthRecvAcceptV6StateCallout =
+{
+    .calloutKey = gAleAuthRecvAcceptV6CalloutKeyGuid,
+    .flags = 0,
+    .classifyFn = DefaultClassifyFn,
+    .flowDeleteFn = DefaultDeleteFn,
+    .notifyFn = DefaultNotifyFn,
+};
+static UINT32 gAleAuthRecvAcceptV6StateCalloutID = 0;
+static FWPM_FILTER gAleAuthRecvAcceptV6Filter =
+{
+    .filterKey = {0},
+    .displayData.name = L"Dsmk - Filter for FWPM_LAYER_ALE_AUTH_RECV_ACCEPT_V6",
+    .displayData.description = L"This filtering layer allows for authorizing receive and accept requests for incoming TCP connections.",
+    .flags = FWPM_FILTER_FLAG_NONE,
+    .providerKey = &gFwpProvider.providerKey,
+    .providerData = {0},
+    .layerKey = {0},
+    .subLayerKey = {0},
+    .weight.type = FWP_EMPTY,
+    .weight.uint64 = 0,
+    .numFilterConditions = 0,
+    .filterCondition = NULL,
+    .action = {0},
+    .providerContextKey = {0},
+    .reserved = NULL,
+    .filterId = 0,
+    .effectiveWeight = {0}
+};
+
 ///
 /// **************************************************************************************************
 /// *                           NETWORK FILTER REGISTRATION REGION                                   *
 /// **************************************************************************************************
 ///
-
 
 VOID
 DriverUnregisterNetworkFilter()
@@ -281,9 +407,60 @@ DriverUnregisterNetworkFilter()
         RtlZeroMemory(&gAleAuthConnectV4ManagementCallout, sizeof(gAleAuthConnectV4ManagementCallout));
     }
 
-    /* TODO: unregister for FWPM_LAYER_ALE_AUTH_RECV_ACCEPT_V4  */
-    /* TODO: unregister for FWPM_LAYER_ALE_AUTH_CONNECT_V6      */
-    /* TODO: unregister for FWPM_LAYER_ALE_AUTH_RECV_ACCEPT_V6  */
+    /* Unregister the FWPM_LAYER_ALE_RECV_ACCEPT_V4 callout. */
+    if (gAleAuthRecvAcceptV4Filter.filterId != 0)
+    {
+		FwpmFilterDeleteById(gFilterEngine, gAleAuthRecvAcceptV4Filter.filterId);
+		RtlZeroMemory(&gAleAuthRecvAcceptV4Filter, sizeof(gAleAuthRecvAcceptV4Filter));
+    }
+
+    if (gAleAuthRecvAcceptV4StateCalloutID != 0)
+    {
+        FwpsCalloutUnregisterById(gAleAuthRecvAcceptV4StateCalloutID);
+        gAleAuthRecvAcceptV4StateCalloutID = 0;
+	}
+
+    if (gAleAuthRecvAcceptV4ManagementCallout.calloutId != 0)
+    {
+        FwpmCalloutDeleteById(gFilterEngine, gAleAuthRecvAcceptV4ManagementCallout.calloutId);
+        RtlZeroMemory(&gAleAuthRecvAcceptV4ManagementCallout, sizeof(gAleAuthRecvAcceptV4ManagementCallout));
+	}
+
+    /* Unregister for FWPM_LAYER_ALE_AUTH_CONNECT_V6      */
+    if (gAleAuthConnectV6Filter.filterId != 0)
+    {
+        FwpmFilterDeleteById(gFilterEngine, gAleAuthConnectV6Filter.filterId);
+        RtlZeroMemory(&gAleAuthConnectV6Filter, sizeof(gAleAuthConnectV6Filter));
+    }
+    if (gAleAuthConnectV6StateCalloutID != 0)
+    {
+        FwpsCalloutUnregisterById(gAleAuthConnectV6StateCalloutID);
+        gAleAuthConnectV6StateCalloutID = 0;
+    }
+    if (gAleAuthConnectV6ManagementCallout.calloutId != 0)
+    {
+        FwpmCalloutDeleteById(gFilterEngine, gAleAuthConnectV6ManagementCallout.calloutId);
+        RtlZeroMemory(&gAleAuthConnectV6ManagementCallout, sizeof(gAleAuthConnectV6ManagementCallout));
+    }
+
+    /* Unregister for FWPM_LAYER_ALE_AUTH_RECV_ACCEPT_V6  */
+    if (gAleAuthRecvAcceptV6Filter.filterId != 0)
+    {
+        FwpmFilterDeleteById(gFilterEngine, gAleAuthRecvAcceptV6Filter.filterId);
+        RtlZeroMemory(&gAleAuthRecvAcceptV6Filter, sizeof(gAleAuthRecvAcceptV6Filter));
+    }
+
+    if (gAleAuthRecvAcceptV6StateCalloutID != 0)
+    {
+        FwpsCalloutUnregisterById(gAleAuthRecvAcceptV6StateCalloutID);
+        gAleAuthRecvAcceptV6StateCalloutID = 0;
+    }
+
+    if (gAleAuthRecvAcceptV6ManagementCallout.calloutId != 0)
+    {
+        FwpmCalloutDeleteById(gFilterEngine, gAleAuthRecvAcceptV6ManagementCallout.calloutId);
+        RtlZeroMemory(&gAleAuthRecvAcceptV6ManagementCallout, sizeof(gAleAuthRecvAcceptV6ManagementCallout));
+    }
 
     /* Delete the sublayer. */
     if (&gFwpProvider.providerKey == gFwpFilterSubLayer.providerKey)
@@ -369,13 +546,90 @@ DriverRegisterNetworkFilter()
         goto CleanUp;
     }
 
-    /* TODO - register for FWPM_LAYER_ALE_AUTH_RECV_ACCEPT_V4 */
-    /* TODO - don't forget cleanup in DriverUnregisterNetworkFilter for this as well :) */
+    /* Register to FWPM_LAYER_ALE_AUTH_RECV_ACCEPT_V4. */
+    gAleAuthRecvAcceptV4ManagementCallout.applicableLayer = FWPM_LAYER_ALE_AUTH_RECV_ACCEPT_V4;
+    status = FwpmCalloutAdd(gFilterEngine, &gAleAuthRecvAcceptV4ManagementCallout, NULL, &gAleAuthRecvAcceptV4ManagementCallout.calloutId);
+    if (!NT_SUCCESS(status))
+    {
+        RtlZeroMemory(&gAleAuthRecvAcceptV4ManagementCallout, sizeof(gAleAuthRecvAcceptV4ManagementCallout));
+        goto CleanUp;
+    }
 
-    /* For IPv6 filtering: */
-        /* TODO - register for FWPM_LAYER_ALE_AUTH_CONNECT_V6 */
-        /* TODO - register for FWPM_LAYER_ALE_AUTH_RECV_ACCEPT_V6 */
-        /* TODO - don't forget cleanup in DriverUnregisterNetworkFilter for those as well :) */
+    status = FwpsCalloutRegister(gNetworkDeviceObject, &gAleAuthRecvAcceptV4StateCallout, &gAleAuthRecvAcceptV4StateCalloutID);
+    if (!NT_SUCCESS(status))
+    {
+        RtlZeroMemory(&gAleAuthRecvAcceptV4StateCallout, sizeof(gAleAuthRecvAcceptV4StateCallout));
+        gAleAuthRecvAcceptV4StateCalloutID = 0;
+        goto CleanUp;
+    }
+
+    gAleAuthRecvAcceptV4Filter.action.calloutKey = gAleAuthRecvAcceptV4ManagementCallout.calloutKey;
+    gAleAuthRecvAcceptV4Filter.action.type = FWP_ACTION_CALLOUT_INSPECTION;
+    gAleAuthRecvAcceptV4Filter.layerKey = gAleAuthRecvAcceptV4ManagementCallout.applicableLayer;
+    gAleAuthRecvAcceptV4Filter.subLayerKey = gFwpFilterSubLayer.subLayerKey;
+    status = FwpmFilterAdd(gFilterEngine, &gAleAuthRecvAcceptV4Filter, NULL, &gAleAuthRecvAcceptV4Filter.filterId);
+    if (!NT_SUCCESS(status))
+    {
+        RtlZeroMemory(&gAleAuthRecvAcceptV4Filter, sizeof(gAleAuthRecvAcceptV4Filter));
+        goto CleanUp;
+    }
+
+    /* Register to FWPM_LAYER_ALE_AUTH_CONNECT_V6. */
+    gAleAuthConnectV6ManagementCallout.applicableLayer = FWPM_LAYER_ALE_AUTH_CONNECT_V6;
+    status = FwpmCalloutAdd(gFilterEngine, &gAleAuthConnectV6ManagementCallout, NULL, &gAleAuthConnectV6ManagementCallout.calloutId);
+    if (!NT_SUCCESS(status))
+    {
+        RtlZeroMemory(&gAleAuthConnectV6ManagementCallout, sizeof(gAleAuthConnectV6ManagementCallout));
+        goto CleanUp;
+    }
+
+    status = FwpsCalloutRegister(gNetworkDeviceObject, &gAleAuthConnectV6StateCallout, &gAleAuthConnectV6StateCalloutID);
+    if (!NT_SUCCESS(status))
+    {
+        RtlZeroMemory(&gAleAuthConnectV6StateCallout, sizeof(gAleAuthConnectV6StateCallout));
+        gAleAuthConnectV6StateCalloutID = 0;
+        goto CleanUp;
+    }
+
+    gAleAuthConnectV6Filter.action.calloutKey = gAleAuthConnectV6ManagementCallout.calloutKey;
+    gAleAuthConnectV6Filter.action.type = FWP_ACTION_CALLOUT_INSPECTION;
+    gAleAuthConnectV6Filter.layerKey = gAleAuthConnectV6ManagementCallout.applicableLayer;
+    gAleAuthConnectV6Filter.subLayerKey = gFwpFilterSubLayer.subLayerKey;
+    status = FwpmFilterAdd(gFilterEngine, &gAleAuthConnectV6Filter, NULL, &gAleAuthConnectV6Filter.filterId);
+    if (!NT_SUCCESS(status))
+    {
+        RtlZeroMemory(&gAleAuthConnectV6Filter, sizeof(gAleAuthConnectV6Filter));
+        goto CleanUp;
+    }
+
+    /* Register to FWPM_LAYER_ALE_AUTH_RECV_ACCEPT_V6. */
+    gAleAuthRecvAcceptV6ManagementCallout.applicableLayer = FWPM_LAYER_ALE_AUTH_RECV_ACCEPT_V6;
+    status = FwpmCalloutAdd(gFilterEngine, &gAleAuthRecvAcceptV6ManagementCallout, NULL, &gAleAuthRecvAcceptV6ManagementCallout.calloutId);
+    if (!NT_SUCCESS(status))
+    {
+        RtlZeroMemory(&gAleAuthRecvAcceptV6ManagementCallout, sizeof(gAleAuthRecvAcceptV6ManagementCallout));
+        goto CleanUp;
+    }
+
+    status = FwpsCalloutRegister(gNetworkDeviceObject, &gAleAuthRecvAcceptV6StateCallout, &gAleAuthRecvAcceptV6StateCalloutID);
+    if (!NT_SUCCESS(status))
+    {
+        RtlZeroMemory(&gAleAuthRecvAcceptV6StateCallout, sizeof(gAleAuthRecvAcceptV6StateCallout));
+        gAleAuthRecvAcceptV6StateCalloutID = 0;
+        goto CleanUp;
+    }
+
+    gAleAuthRecvAcceptV6Filter.action.calloutKey = gAleAuthRecvAcceptV6ManagementCallout.calloutKey;
+    gAleAuthRecvAcceptV6Filter.action.type = FWP_ACTION_CALLOUT_INSPECTION;
+    gAleAuthRecvAcceptV6Filter.layerKey = gAleAuthRecvAcceptV6ManagementCallout.applicableLayer;
+    gAleAuthRecvAcceptV6Filter.subLayerKey = gFwpFilterSubLayer.subLayerKey;
+    status = FwpmFilterAdd(gFilterEngine, &gAleAuthRecvAcceptV6Filter, NULL, &gAleAuthRecvAcceptV6Filter.filterId);
+    if (!NT_SUCCESS(status))
+    {
+        RtlZeroMemory(&gAleAuthRecvAcceptV6Filter, sizeof(gAleAuthRecvAcceptV6Filter));
+        goto CleanUp;
+    }
+
 
 CleanUp:
     if (!NT_SUCCESS(status))
