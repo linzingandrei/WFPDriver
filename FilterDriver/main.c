@@ -484,10 +484,11 @@ DefaultClassifyFn(
 
 	WCHAR icmpTypeString[128] = { 0 };
 
-    UNICODE_STRING appPathString;
-	appPathString.Buffer = app->value.unicodeString;
-	appPathString.Length = (USHORT)app->value.byteBlob->size;
-	appPathString.MaximumLength = (USHORT)app->value.byteBlob->size;
+    FWP_BYTE_BLOB* appBlob = app->value.byteBlob;
+	UNICODE_STRING appPathString;
+	appPathString.Buffer = (PWCH)appBlob->data;
+	appPathString.Length = (USHORT)appBlob->size;
+	appPathString.MaximumLength = (USHORT)appBlob->size;
 
     switch(localAddress->value.type)
     {
@@ -545,7 +546,7 @@ DefaultClassifyFn(
                 0,
                 0,
                 "AppId: %wZ\n",
-                appPathString
+                &appPathString
             );
 
             //__debugbreak();
@@ -608,7 +609,7 @@ DefaultClassifyFn(
                 0,
                 0,
                 "AppId: %wZ\n",
-                appPathString
+                &appPathString
             );
         }
         break;
