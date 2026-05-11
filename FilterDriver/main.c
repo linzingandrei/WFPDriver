@@ -8,6 +8,7 @@
 #include <fwpsk.h>
 #include <guiddef.h>
 #include <fwpmk.h>
+#include "ipmib.h"
 
 #include <ip2string.h>
 
@@ -15,6 +16,8 @@
 #define PROTOCOL_TCP 6
 #define PROTOCOL_UDP 17
 #define PROTOCOL_ICMP 1
+
+#define UTILS_TAG_UNICODE_STRING 'utus'
 
 
 ///
@@ -84,6 +87,333 @@ void GetNetwork5TupleIndexesForLayer(
     }
 }
 
+void GetICMPv6TypeValue(UINT8 ICMPIndex, WCHAR* ICMPTypeValue)
+{
+    switch (ICMPIndex)
+    {
+    case 0:
+        wcscpy_s(ICMPTypeValue, 128, L"Reserved");
+        break;
+
+    case 1:
+        wcscpy_s(ICMPTypeValue, 128, L"Destination Unreachable");
+        break;
+
+    case 2:
+        wcscpy_s(ICMPTypeValue, 128, L"Packet Too Big");
+        break;
+
+    case 3:
+        wcscpy_s(ICMPTypeValue, 128, L"Time Exceeded");
+        break;
+
+    case 4:
+        wcscpy_s(ICMPTypeValue, 128, L"Parameter Problem");
+        break;
+
+    case 100:
+    case 101:
+        wcscpy_s(ICMPTypeValue, 128, L"Private experimentation");
+        break;
+
+    case 127:
+        wcscpy_s(ICMPTypeValue, 128, L"Reserved for expansion of ICMPv6 error messages");
+        break;
+
+    case 128:
+        wcscpy_s(ICMPTypeValue, 128, L"Echo Request");
+        break;
+
+    case 129:
+        wcscpy_s(ICMPTypeValue, 128, L"Echo Reply");
+        break;
+
+    case 130:
+        wcscpy_s(ICMPTypeValue, 128, L"Multicast Listener Query");
+        break;
+
+    case 131:
+        wcscpy_s(ICMPTypeValue, 128, L"Multicast Listener Report");
+        break;
+
+    case 132:
+        wcscpy_s(ICMPTypeValue, 128, L"Multicast Listener Done");
+        break;
+
+    case 133:
+        wcscpy_s(ICMPTypeValue, 128, L"Router Solicitation");
+        break;
+
+    case 134:
+        wcscpy_s(ICMPTypeValue, 128, L"Router Advertisement");
+        break;
+
+    case 135:
+        wcscpy_s(ICMPTypeValue, 128, L"Neighbor Solicitation");
+        break;
+
+    case 136:
+        wcscpy_s(ICMPTypeValue, 128, L"Neighbor Advertisement");
+        break;
+
+    case 137:
+        wcscpy_s(ICMPTypeValue, 128, L"Redirect Message");
+        break;
+
+    case 138:
+        wcscpy_s(ICMPTypeValue, 128, L"Router Renumbering");
+        break;
+
+    case 139:
+        wcscpy_s(ICMPTypeValue, 128, L"ICMP Node Information Query");
+        break;
+
+    case 140:
+        wcscpy_s(ICMPTypeValue, 128, L"ICMP Node Information Response");
+        break;
+
+    case 141:
+        wcscpy_s(ICMPTypeValue, 128, L"Inverse Neighbor Discovery Solicitation Message");
+        break;
+
+    case 142:
+        wcscpy_s(ICMPTypeValue, 128, L"Inverse Neighbor Discovery Advertisement Message");
+        break;
+
+    case 143:
+        wcscpy_s(ICMPTypeValue, 128, L"Version 2 Multicast Listener Report");
+        break;
+
+    case 144:
+        wcscpy_s(ICMPTypeValue, 128, L"Home Agent Address Discovery Request Message");
+        break;
+
+    case 145:
+        wcscpy_s(ICMPTypeValue, 128, L"Home Agent Address Discovery Reply Message");
+        break;
+
+    case 146:
+        wcscpy_s(ICMPTypeValue, 128, L"Mobile Prefix Solicitation");
+        break;
+
+    case 147:
+        wcscpy_s(ICMPTypeValue, 128, L"Mobile Prefix Advertisement");
+        break;
+
+    case 148:
+        wcscpy_s(ICMPTypeValue, 128, L"Certification Path Solicitation Message");
+        break;
+
+    case 149:
+        wcscpy_s(ICMPTypeValue, 128, L"Certification Path Advertisement Message");
+        break;
+
+    case 150:
+        wcscpy_s(ICMPTypeValue, 128, L"ICMP messages utilized by experimental mobility protocols such as Seamoby");
+        break;
+
+    case 151:
+        wcscpy_s(ICMPTypeValue, 128, L"Multicast Router Advertisement");
+        break;
+
+    case 152:
+        wcscpy_s(ICMPTypeValue, 128, L"Multicast Router Solicitation");
+        break;
+
+    case 153:
+        wcscpy_s(ICMPTypeValue, 128, L"Multicast Router Termination");
+        break;
+
+    case 154:
+        wcscpy_s(ICMPTypeValue, 128, L"FMIPv6 Messages");
+        break;
+
+    case 155:
+        wcscpy_s(ICMPTypeValue, 128, L"RPL Control Message");
+        break;
+
+    case 156:
+        wcscpy_s(ICMPTypeValue, 128, L"ILNPv6 Locator Update Message");
+        break;
+
+    case 157:
+        wcscpy_s(ICMPTypeValue, 128, L"Duplicate Address Request");
+        break;
+
+    case 158:
+        wcscpy_s(ICMPTypeValue, 128, L"Duplicate Address Confirmation");
+        break;
+
+    case 159:
+        wcscpy_s(ICMPTypeValue, 128, L"MPL Control Message");
+        break;
+
+    case 160:
+        wcscpy_s(ICMPTypeValue, 128, L"Extended Echo Request");
+        break;
+
+    case 161:
+        wcscpy_s(ICMPTypeValue, 128, L"Extended Echo Reply");
+        break;
+
+    case 200:
+    case 201:
+        wcscpy_s(ICMPTypeValue, 128, L"Private experimentation");
+        break;
+
+    case 255:
+        wcscpy_s(ICMPTypeValue, 128, L"Reserved for expansion of ICMPv6 informational messages");
+        break;
+
+    default:
+        wcscpy_s(ICMPTypeValue, 128, L"Unassigned");
+        break;
+    }
+}
+
+void GetICMPv4TypeValue(UINT8 ICMPIndex, WCHAR* ICMPTypeValue)
+{
+    switch (ICMPIndex)
+    {
+    case 0:
+        wcscpy_s(ICMPTypeValue, 128, L"Echo Reply");
+        break;
+
+    case 1:
+    case 2:
+    case 7:
+        wcscpy_s(ICMPTypeValue, 128, L"Unassigned");
+        break;
+
+    case 3:
+        wcscpy_s(ICMPTypeValue, 128, L"Destination Unreachable");
+        break;
+
+    case 4:
+        wcscpy_s(ICMPTypeValue, 128, L"Source Quench (Deprecated)");
+        break;
+
+    case 5:
+        wcscpy_s(ICMPTypeValue, 128, L"Redirect");
+        break;
+
+    case 6:
+        wcscpy_s(ICMPTypeValue, 128, L"Alternate Host Address (Deprecated)");
+        break;
+
+    case 8:
+        wcscpy_s(ICMPTypeValue, 128, L"Echo");
+        break;
+
+    case 9:
+        wcscpy_s(ICMPTypeValue, 128, L"Router Advertisement");
+        break;
+
+    case 10:
+        wcscpy_s(ICMPTypeValue, 128, L"Router Solicitation");
+        break;
+
+    case 11:
+        wcscpy_s(ICMPTypeValue, 128, L"Time Exceeded");
+        break;
+
+    case 12:
+        wcscpy_s(ICMPTypeValue, 128, L"Parameter Problem");
+        break;
+
+    case 13:
+        wcscpy_s(ICMPTypeValue, 128, L"Timestamp");
+        break;
+
+    case 14:
+        wcscpy_s(ICMPTypeValue, 128, L"Timestamp Reply");
+        break;
+
+    case 15:
+    case 16:
+    case 17:
+    case 18:
+        wcscpy_s(ICMPTypeValue, 128, L"Deprecated");
+        break;
+
+    case 19:
+        wcscpy_s(ICMPTypeValue, 128, L"Reserved (for Security)");
+        break;
+
+    case 30:
+        wcscpy_s(ICMPTypeValue, 128, L"Traceroute (Deprecated)");
+        break;
+
+    case 31:
+        wcscpy_s(ICMPTypeValue, 128, L"Datagram Conversion Error (Deprecated)");
+        break;
+
+    case 32:
+        wcscpy_s(ICMPTypeValue, 128, L"Mobile Host Redirect (Deprecated)");
+        break;
+
+    case 33:
+        wcscpy_s(ICMPTypeValue, 128, L"IPv6 Where-Are-You (Deprecated)");
+        break;
+
+    case 34:
+        wcscpy_s(ICMPTypeValue, 128, L"IPv6 I-Am-Here (Deprecated)");
+        break;
+
+    case 35:
+        wcscpy_s(ICMPTypeValue, 128, L"Mobile Registration Request (Deprecated)");
+        break;
+
+    case 36:
+        wcscpy_s(ICMPTypeValue, 128, L"Mobile Registration Reply (Deprecated)");
+        break;
+
+    case 37:
+        wcscpy_s(ICMPTypeValue, 128, L"Domain Name Request (Deprecated)");
+        break;
+
+    case 38:
+        wcscpy_s(ICMPTypeValue, 128, L"Domain Name Reply (Deprecated)");
+        break;
+
+    case 39:
+        wcscpy_s(ICMPTypeValue, 128, L"SKIP (Deprecated)");
+        break;
+
+    case 40:
+        wcscpy_s(ICMPTypeValue, 128, L"Photuris");
+        break;
+
+    case 41:
+        wcscpy_s(ICMPTypeValue, 128, L"Experimental Mobility Protocols (Seamoby)");
+        break;
+
+    case 42:
+        wcscpy_s(ICMPTypeValue, 128, L"Extended Echo Request");
+        break;
+
+    case 43:
+        wcscpy_s(ICMPTypeValue, 128, L"Extended Echo Reply");
+        break;
+
+    case 253:
+        wcscpy_s(ICMPTypeValue, 128, L"RFC3692-style Experiment 1");
+        break;
+
+    case 254:
+        wcscpy_s(ICMPTypeValue, 128, L"RFC3692-style Experiment 2");
+        break;
+
+    case 255:
+        wcscpy_s(ICMPTypeValue, 128, L"Reserved");
+        break;
+
+    default:
+        wcscpy_s(ICMPTypeValue, 128, L"Unassigned");
+        break;
+    }
+}
+
 void NTAPI
 DefaultClassifyFn(
     _In_ const FWPS_INCOMING_VALUES0* inFixedValues,
@@ -120,35 +450,174 @@ DefaultClassifyFn(
         &protocolIndex,
         &icmpIndex);
 
-	FWPS_INCOMING_VALUE* appId = &inFixedValues->incomingValue[appId];
+	FWPS_INCOMING_VALUE* app = &inFixedValues->incomingValue[appId];
     FWPS_INCOMING_VALUE* localAddress = &inFixedValues->incomingValue[localAddressIndex];
     FWPS_INCOMING_VALUE* localPort = &inFixedValues->incomingValue[localPortIndex];
     FWPS_INCOMING_VALUE* remoteAddress = &inFixedValues->incomingValue[remoteAddressIndex];
     FWPS_INCOMING_VALUE* remotePort = &inFixedValues->incomingValue[remotePortIndex];
 	FWPS_INCOMING_VALUE* protocol = &inFixedValues->incomingValue[protocolIndex];
-	FWPS_INCOMING_VALUE* icmpIndex = &inFixedValues->incomingValue[icmpIndex];
+	FWPS_INCOMING_VALUE* icmp = &inFixedValues->incomingValue[icmpIndex];
 
-	UNREFERENCED_PARAMETER(appId);
+	UNREFERENCED_PARAMETER(app);
     UNREFERENCED_PARAMETER(localAddress);
     UNREFERENCED_PARAMETER(localPort);
     UNREFERENCED_PARAMETER(remoteAddress);
     UNREFERENCED_PARAMETER(remotePort);
     UNREFERENCED_PARAMETER(protocol);
-	UNREFERENCED_PARAMETER(icmpIndex);
+	UNREFERENCED_PARAMETER(icmp);
 
+    WCHAR protocolString[25] = { 0 };
+    switch (protocol->value.uint8)
     {
-        NT_ASSERT(localAddress->value.type == FWP_UINT32);
-        NT_ASSERT(localPort->value.type == FWP_UINT16);
-     
-        struct in_addr ipAddress = { 0 };
-     
-        WCHAR ipAddressBuffer[100] = { 0 };
-        ULONG ipAddressBufferSize = ARRAYSIZE(ipAddressBuffer);
-     
-        ipAddress.S_un.S_addr = RtlUlongByteSwap(localAddress->value.int32);
-        RtlIpv4AddressToStringExW(&ipAddress, localPort->value.int16, &ipAddressBuffer[0], &ipAddressBufferSize);
-     
-        __debugbreak();
+        case PROTOCOL_TCP:
+            wcscpy_s(protocolString, sizeof(protocolString) / sizeof(WCHAR), L"TCP");
+            break;
+        case PROTOCOL_UDP:
+            wcscpy_s(protocolString, sizeof(protocolString) / sizeof(WCHAR), L"UDP");
+            break;
+        case PROTOCOL_ICMP:
+            wcscpy_s(protocolString, sizeof(protocolString) / sizeof(WCHAR), L"ICMP");
+            break;
+        default:
+            wcscpy_s(protocolString, sizeof(protocolString) / sizeof(WCHAR), L"Other");
+    }
+
+	WCHAR icmpTypeString[128] = { 0 };
+
+    UNICODE_STRING appPathString;
+	appPathString.Buffer = app->value.unicodeString;
+	appPathString.Length = (USHORT)app->value.byteBlob->size;
+	appPathString.MaximumLength = (USHORT)app->value.byteBlob->size;
+
+    switch(localAddress->value.type)
+    {
+        case FWP_UINT32: 
+        {
+			GetICMPv4TypeValue(icmp->value.uint8, icmpTypeString);
+            /*struct in_addr ipAddress = {0};
+
+            WCHAR ipAddressBuffer[100] = { 0 };
+            ULONG ipAddressBufferSize = ARRAYSIZE(ipAddressBuffer);
+
+            ipAddress.S_un.S_addr = RtlUlongByteSwap(localAddress->value.uint32);*/
+            //RtlIpv4AddressToStringExW(&ipAddress, localPort->value.uint16, &ipAddressBuffer[0], &ipAddressBufferSize);
+
+            DbgPrintEx(0, 0, "IPv4\n");
+
+            DbgPrintEx(
+                0,
+                0,
+                "%u.%u.%u.%u:%u\n",
+                (localAddress->value.uint32 >> 24) & 0xFF,
+                (localAddress->value.uint32 >> 16) & 0xFF,
+                (localAddress->value.uint32 >> 8) & 0xFF,
+                (localAddress->value.uint32) & 0xFF,
+                localPort->value.uint16
+            );
+
+            DbgPrintEx(
+                0,
+                0,
+				"%u.%u.%u.%u:%u\n",
+                (remoteAddress->value.uint32 >> 24) & 0xFF,
+                (remoteAddress->value.uint32 >> 16) & 0xFF,
+                (remoteAddress->value.uint32 >> 8) & 0xFF,
+                (remoteAddress->value.uint32) & 0xFF,
+				remotePort->value.uint16
+            );
+
+            DbgPrintEx(
+                0,
+                0,
+                "Protocol: %ws\n",
+                protocolString
+            );
+
+            DbgPrintEx(
+                0,
+                0,
+                "ICMP Type: %ws (%u)\n",
+                icmpTypeString,
+                icmp->value.uint8
+            );
+
+            DbgPrintEx(
+                0,
+                0,
+                "AppId: %wZ\n",
+                appPathString
+            );
+
+            //__debugbreak();
+			RtlZeroMemory(icmpTypeString, sizeof(icmpTypeString));
+        }
+        break;
+
+        case FWP_UINT64:
+        {
+			GetICMPv6TypeValue(icmp->value.uint8, icmpTypeString);
+
+            DbgPrintEx(0, 0, "IPv6\n");
+
+           /* DbgPrintEx(
+                0,
+                0,
+                "%u.%u.%u.%u.%u.%u.%u.%u:%u\n",
+				(localAddress->value.uint64 >> 32) & 0xFF,
+				(localAddress->value.uint64 >> 48) & 0xFF,
+				(localAddress->value.uint64 >> 40) & 0xFF,
+                (localAddress->value.uint64 >> 32) & 0xFF,
+                (localAddress->value.uint64 >> 24) & 0xFF,
+                (localAddress->value.uint64 >> 16) & 0xFF,
+                (localAddress->value.uint64 >> 8) & 0xFF,
+                (localAddress->value.uint64) & 0xFF,
+                localPort->value.uint16
+            );
+
+            DbgPrintEx(
+                0,
+                0,
+                "%u.%u.%u.%u.%u.%u.%u.%u:%u\n",
+                (localAddress->value.uint32 >> 56) & 0xFF,
+                (localAddress->value.uint32 >> 48) & 0xFF,
+                (localAddress->value.uint32 >> 40) & 0xFF,
+                (localAddress->value.uint32 >> 32) & 0xFF,
+                (localAddress->value.uint32 >> 24) & 0xFF,
+                (localAddress->value.uint32 >> 16) & 0xFF,
+                (localAddress->value.uint32 >> 8) & 0xFF,
+                (localAddress->value.uint32) & 0xFF,
+                remotePort->value.uint16
+            );*/
+
+            DbgPrintEx(
+                0,
+                0,
+                "Protocol: %ws\n",
+                protocolString
+            );
+
+            DbgPrintEx(
+                0,
+                0,
+                "ICMP Type: %ws (%u)\n",
+                icmpTypeString,
+                icmp->value.uint8
+            );
+
+            DbgPrintEx(
+                0,
+                0,
+                "AppId: %wZ\n",
+                appPathString
+            );
+        }
+        break;
+
+        default:
+        {
+            
+        }
+	    break;
     }
 }
 
