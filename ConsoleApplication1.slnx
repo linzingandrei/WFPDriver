@@ -1,0 +1,11 @@
+<Solution>
+  <Configurations>
+    <Platform Name="x64" />
+    <Platform Name="x86" />
+  </Configurations>
+  <Project Path="ConsoleApplication1/ConsoleApplication1.vcxproj" Id="a4a2a934-d5f7-47d6-af7c-d6d20d99ede8" />
+  <Project Path="FilterDriver/FilterDriver.vcxproj">
+    <Platform Project="x64" />
+    <Deploy />
+  </Project>
+</Solution>
